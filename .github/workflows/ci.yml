@@ -33,11 +33,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # 4. Runs the build command (equivalent to 'bun build')
+      # 4. Runs the build command (equivalent to 'bun run build')
       - name: Build project
-        run: bun build
+        run: bun run build  # <-- THIS IS THE FIX
         
       # 5. (Optional) If you have a lint command, add it here
       # - name: Run linter
-      #   run: bun lint 
+      #   run: bun run lint 
       #   (You'll need to add a "lint" script to your package.json first)
