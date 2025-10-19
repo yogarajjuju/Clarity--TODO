@@ -1,0 +1,43 @@
+# GitHub Actions workflow file: .github/workflows/ci.yml
+
+name: Clarity CI
+
+# Controls when the action will run
+on:
+  # Triggers the workflow on push events for the "main" branch
+  push:
+    branches: [ "main" ]
+    
+  # Triggers the workflow on pull request events targeting the "main" branch
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checks out your repository under $GITHUB_WORKSPACE
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Sets up the Bun runtime
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest # Use the latest version of Bun
+
+      # 3. Installs dependencies (equivalent to 'bun install')
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # 4. Runs the build command (equivalent to 'bun build')
+      - name: Build project
+        run: bun build
+        
+      # 5. (Optional) If you have a lint command, add it here
+      # - name: Run linter
+      #   run: bun lint 
+      #   (You'll need to add a "lint" script to your package.json first)
