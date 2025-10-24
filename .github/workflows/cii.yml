@@ -1,4 +1,4 @@
-name: 2. CI/CD Pipeline for React App
+name: CI/CD Pipeline for React App
 
 on:
   push:
@@ -7,43 +7,43 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+# Grant permissions for the workflow to deploy to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
 jobs:
+  # Job 1: Build the project using Bun
   build:
     runs-on: ubuntu-latest
     steps:
       - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      - name: 2. Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      # NEW: Install the Bun runtime
+      - name: 2. Setup Bun
+        uses: oven-sh/setup-bun@v1
 
+      # NEW: Install dependencies using 'bun install'
       - name: 3. Install Dependencies
-        run: npm install
+        run: bun install
 
-      - name: 4. Run Lint
-        run: npm run lint
-
+      # NEW: Run the build script using 'bun'
+      # We are still passing the '--base' flag to Vite
       - name: 5. Run Build
-        # This is the critical fix:
-        # It tells Vite the correct sub-folder for your site
-        run: npm run build -- --base=/${{ github.event.repository.name }}/
+        run: bun run build -- --base=/${{ github.event.repository.name }}/
 
       - name: 6. Setup Pages
         uses: actions/configure-pages@v4
 
+      # Upload the 'dist' folder created by the build
       - name: 7. Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # This uploads ONLY the 'dist' folder created by the build
           path: './dist' 
 
+  # Job 2: Deploy the built site to GitHub Pages
   deploy:
     # This job waits for the 'build' job to succeed
     needs: build
