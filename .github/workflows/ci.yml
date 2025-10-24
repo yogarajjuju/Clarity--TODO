@@ -7,14 +7,12 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
-# NEW: Add top-level permissions for the whole workflow
 permissions:
   contents: read
-  pages: write      # Allows the workflow to write to GitHub Pages
-  id-token: write   # Allows the workflow to authenticate for deployment
+  pages: write
+  id-token: write
 
 jobs:
-  # Job 1: Build the site (this is mostly the same as before)
   build:
     runs-on: ubuntu-latest
     steps:
@@ -32,38 +30,32 @@ jobs:
       - name: 4. Run Lint
         run: npm run lint
 
+      # --- THIS IS THE FINAL FIX ---
       - name: 5. Run Build
-        run: npm run build
+        # We must tell Vite what the base path will be on GitHub Pages
+        # The extra '--' passes the flag to the 'vite build' script
+        # The 'github.event.repository.name' variable automatically gets 'Clarity--TODO'
+        run: npm run build -- --base=/${{ github.event.repository.name }}/
+      # --- END OF FIX ---
 
-      # NEW: This step is no longer optional. We must configure pages.
       - name: 6. Setup Pages
         uses: actions/configure-pages@v4
 
-      # NEW: We are uploading ONLY the 'dist' folder
       - name: 7. Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # This is the CRITICAL change:
           path: './dist' 
 
-  # Job 2: Deploy the site (This is all new)
   deploy:
-    # This job 'needs' (waits for) the 'build' job to finish
     needs: build
-
-    # Grant permissions specifically for this deployment job
     permissions:
       pages: write
       id-token: write
-
-    # Define the environment this deploys to
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }} # This will output the final URL
-
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: 1. Deploy to GitHub Pages
-        # This is the official action to deploy the artifact to Pages
         uses: actions/deploy-pages@v4
         id: deployment
