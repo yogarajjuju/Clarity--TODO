@@ -1,43 +1,69 @@
-# GitHub Actions workflow file: .github/workflows/ci.yml
+name: 2. CI/CD Pipeline for React App
 
-name: Clarity CI
-
-# Controls when the action will run
 on:
-  # Triggers the workflow on push events for the "main" branch
   push:
     branches: [ "main" ]
-    
-  # Triggers the workflow on pull request events targeting the "main" branch
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
+
+# NEW: Add top-level permissions for the whole workflow
+permissions:
+  contents: read
+  pages: write      # Allows the workflow to write to GitHub Pages
+  id-token: write   # Allows the workflow to authenticate for deployment
 
 jobs:
-  # This workflow contains a single job called "build"
+  # Job 1: Build the site (this is mostly the same as before)
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Checks out your repository under $GITHUB_WORKSPACE
-      - name: Checkout code
+      - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      # 2. Sets up the Bun runtime
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+      - name: 2. Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest # Use the latest version of Bun
+          node-version: 20
 
-      # 3. Installs dependencies (equivalent to 'bun install')
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - name: 3. Install Dependencies
+        run: npm install
 
-      # 4. Runs the build command (equivalent to 'bun run build')
-      - name: Build project
-        run: bun run build  # <-- THIS IS THE FIX
-        
-      # 5. (Optional) If you have a lint command, add it here
-      # - name: Run linter
-      #   run: bun run lint 
-      #   (You'll need to add a "lint" script to your package.json first)
+      - name: 4. Run Lint
+        run: npm run lint
+
+      - name: 5. Run Build
+        run: npm run build
+
+      # NEW: This step is no longer optional. We must configure pages.
+      - name: 6. Setup Pages
+        uses: actions/configure-pages@v4
+
+      # NEW: We are uploading ONLY the 'dist' folder
+      - name: 7. Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # This is the CRITICAL change:
+          path: './dist' 
+
+  # Job 2: Deploy the site (This is all new)
+  deploy:
+    # This job 'needs' (waits for) the 'build' job to finish
+    needs: build
+
+    # Grant permissions specifically for this deployment job
+    permissions:
+      pages: write
+      id-token: write
+
+    # Define the environment this deploys to
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }} # This will output the final URL
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Deploy to GitHub Pages
+        # This is the official action to deploy the artifact to Pages
+        uses: actions/deploy-pages@v4
+        id: deployment
