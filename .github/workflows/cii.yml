@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for React App
+name: Final CI/CD Pipeline
 
 on:
   push:
@@ -7,55 +7,45 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
-# Grant permissions for the workflow to deploy to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
 jobs:
-  # Job 1: Build the project using Bun
   build:
     runs-on: ubuntu-latest
     steps:
       - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      # NEW: Install the Bun runtime
       - name: 2. Setup Bun
         uses: oven-sh/setup-bun@v1
 
-      # NEW: Install dependencies using 'bun install'
       - name: 3. Install Dependencies
         run: bun install
 
-      # NEW: Run the build script using 'bun'
-      # We are still passing the '--base' flag to Vite
-      - name: 5. Run Build
-        run: bun run build -- --base=/${{ github.event.repository.name }}/
+      # NEW: We simplified this command because the 'base' is now in vite.config.ts
+      - name: 4. Run Build
+        # This runs the 'build' script from your package.json
+        run: bun run build 
 
-      - name: 6. Setup Pages
+      - name: 5. Setup Pages
         uses: actions/configure-pages@v4
 
-      # Upload the 'dist' folder created by the build
-      - name: 7. Upload artifact
+      - name: 6. Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: './dist' 
 
-  # Job 2: Deploy the built site to GitHub Pages
   deploy:
-    # This job waits for the 'build' job to succeed
     needs: build
-    
     permissions:
       pages: write
       id-token: write
-      
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-      
     runs-on: ubuntu-latest
     steps:
       - name: 1. Deploy to GitHub Pages
