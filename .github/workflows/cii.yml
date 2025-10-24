@@ -1,51 +1,37 @@
 name: 1. CI Pipeline (Build and Lint)
 
 on:
-  # Run this on pushes to the 'main' branch
   push:
     branches: [ "main" ]
-  # Run this on pull requests that target the 'main' branch
   pull_request:
     branches: [ "main" ]
-    
-  # Allow manual runs
   workflow_dispatch:
 
 jobs:
-  # This job is for building and testing the code
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the repository code
       - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      # Step 2: Set up Node.js
-      # This action installs a specific version of Node.js on the runner
       - name: 2. Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18  # Your project will use Node.js version 18
+          node-version: 18
 
-      # Step 3: Install dependencies
-      # 'npm ci' is a "clean install" - faster and safer for CI
-      # It installs exactly what is in your package-lock.json
+      # --- THE FIX IS HERE ---
       - name: 3. Install Dependencies
-        run: npm ci
+        # We are using 'npm install' instead of 'npm ci'
+        # because this project does not have a package-lock.json
+        run: npm install
+      # --- END OF FIX ---
 
-      # Step 4: Run the linter
-      # This runs the 'lint' script from your package.json
-      # It will fail the workflow if it finds any code style errors
       - name: 4. Run Lint
         run: npm run lint
 
-      # Step 5: Run the build
-      # This runs the 'build' script from your package.json (Vite)
-      # It will fail if your React code has errors
       - name: 5. Run Build
         run: npm run build
 
-      # (Optional) This step shows us the files that were created by the build
       - name: 6. List build output
         run: ls -la dist
