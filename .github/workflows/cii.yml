@@ -1,4 +1,4 @@
-name: 1. CI Pipeline (Build and Lint)
+name: 2. CI/CD Pipeline for React App
 
 on:
   push:
@@ -7,21 +7,22 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      # --- THE FIX IS HERE ---
       - name: 2. Setup Node.js
         uses: actions/setup-node@v4
         with:
-          # We'll use Node 20, the current LTS, to solve the 'File is not defined' error
           node-version: 20
-      # --- END OF FIX ---
 
       - name: 3. Install Dependencies
         run: npm install
@@ -30,7 +31,33 @@ jobs:
         run: npm run lint
 
       - name: 5. Run Build
-        run: npm run build
+        # This is the critical fix:
+        # It tells Vite the correct sub-folder for your site
+        run: npm run build -- --base=/${{ github.event.repository.name }}/
 
-      - name: 6. List build output
-        run: ls -la dist
+      - name: 6. Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: 7. Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # This uploads ONLY the 'dist' folder created by the build
+          path: './dist' 
+
+  deploy:
+    # This job waits for the 'build' job to succeed
+    needs: build
+    
+    permissions:
+      pages: write
+      id-token: write
+      
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+        id: deployment
